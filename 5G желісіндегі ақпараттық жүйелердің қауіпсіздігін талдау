@@ -1,0 +1,81 @@
+from django.db import models
+from django.contrib.auth.models import User
+from django_cryptography.fields import encrypt
+
+
+class Role(models.Model):
+    name = models.CharField(max_length=100, verbose_name='Название роли')
+
+    class Meta:
+        verbose_name = 'Роль'
+        verbose_name_plural = 'Роли'
+
+    def __str__(self):
+        return self.name
+
+class Permission(models.Model):
+    name = models.CharField(max_length=100, verbose_name='Название права доступа')
+    codename = models.CharField(max_length=100, verbose_name='Кодовое название права доступа')
+
+    class Meta:
+        verbose_name = 'Право доступа'
+        verbose_name_plural = 'Права доступа'
+
+    def __str__(self):
+        return self.name
+
+class Project(models.Model):
+    name = models.CharField(max_length=100, verbose_name='Название проекта')
+    description = models.TextField(verbose_name='Описание проекта')
+    start_date = models.DateField(verbose_name='Дата начала')
+    end_date = models.DateField(verbose_name='Дата окончания')
+    priority = models.IntegerField(verbose_name='Приоритет проекта')
+    manager = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_projects', verbose_name='Менеджер проекта')
+
+    class Meta:
+        verbose_name = 'Проект'
+        verbose_name_plural = 'Проекты'
+
+    def __str__(self):
+        return self.name
+
+class Task(models.Model):
+    title = encrypt(models.CharField(max_length=100, verbose_name='Название задачи'))
+    description = encrypt(models.TextField(verbose_name='Описание задачи'))
+    deadline = models.DateField(verbose_name='Крайний срок')
+    status = models.CharField(max_length=100, verbose_name='Статус задачи')
+    priority = models.IntegerField(verbose_name='Приоритет задачи')
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='tasks', verbose_name='Проект')
+    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='assigned_tasks', verbose_name='Исполнитель задачи')
+
+    class Meta:
+        verbose_name = 'Задача'
+        verbose_name_plural = 'Задачи'
+
+    def __str__(self):
+        return self.title
+
+class AuditLog(models.Model):
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name='Пользователь')
+    action = models.TextField(verbose_name='Действие')
+    timestamp = models.DateTimeField(auto_now_add=True, verbose_name='Временная метка')
+
+    class Meta:
+        verbose_name = 'Журнал событий'
+        verbose_name_plural = 'Журнал событий'
+
+    def __str__(self):
+        return f"{self.user} {self.action} on {self.timestamp}"
+
+class Report(models.Model):
+    title = models.CharField(max_length=100, verbose_name='Название отчета')
+    content = models.TextField(verbose_name='Содержание отчета')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_reports', verbose_name='Автор отчета')
+
+    class Meta:
+        verbose_name = 'Отчет'
+        verbose_name_plural = 'Отчеты'
+
+    def __str__(self):
+        return self.title
